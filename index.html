@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Kas Digital</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 pb-12">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-indigo-600 p-2 rounded-lg shadow">
+                    <i class="fas fa-wallet text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Kas Digital</h1>
+                    <p class="text-xs text-indigo-200" id="roleStatus">Mode: Pengunjung (Hanya Lihat)</p>
+                </div>
+            </div>
+            <!-- Tombol Login Admin -->
+            <button id="adminAuthBtn" onclick="toggleAdminMode()" class="bg-indigo-700 hover:bg-indigo-800 text-xs text-white px-3 py-2 rounded-lg transition flex items-center gap-1.5 shadow">
+                <i class="fas fa-lock" id="lockIcon"></i>
+                <span id="authBtnText">Masuk Admin</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 pt-6 space-y-6">
+
+        <!-- Banner Informasi Mode Pengunjung -->
+        <div id="readOnlyNotice" class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-info-circle text-amber-500 text-xl"></i>
+                <p class="text-sm text-amber-800">
+                    Anda sedang melihat laporan dalam mode <strong>Hanya Lihat (Read-Only)</strong>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Ringkasan Keuangan -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Saldo Utama -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-5 text-white shadow-md">
+                <p class="text-xs font-medium text-blue-100 uppercase tracking-wider">Total Saldo Kas</p>
+                <h2 class="text-2xl font-bold mt-1" id="totalSaldo">Rp 0</h2>
+                <p class="text-xs text-blue-200 mt-2"><i class="fas fa-check-circle text-[10px] mr-1"></i> Data Terkini</p>
+            </div>
+
+            <!-- Total Pemasukan -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm flex items-center space-x-4">
+                <div class="bg-emerald-100 text-emerald-600 p-3 rounded-xl">
+                    <i class="fas fa-arrow-down text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-medium">Total Pemasukan</p>
+                    <p class="text-xl font-bold text-emerald-600" id="totalPemasukan">Rp 0</p>
+                </div>
+            </div>
+
+            <!-- Total Pengeluaran -->
+            <div class="bg-white rounded-xl p-5 border border-gray-200 shadow-sm flex items-center space-x-4">
+                <div class="bg-rose-100 text-rose-600 p-3 rounded-xl">
+                    <i class="fas fa-arrow-up text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-medium">Total Pengeluaran</p>
+                    <p class="text-xl font-bold text-rose-600" id="totalPengeluaran">Rp 0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Tambah Transaksi (KHUSUS ADMIN) -->
+        <div id="adminFormSection" class="hidden bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-plus-circle text-indigo-600"></i> Tambah Transaksi Baru (Admin)
+            </h2>
+            <form id="transactionForm" onsubmit="addTransaction(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Jenis Transaksi</label>
+                    <select id="type" required class="w-full text-sm p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="pemasukan">Pemasukan (+)</option>
+                        <option value="pengeluaran">Pengeluaran (-)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Nama Pembayar / Penerima</label>
+                    <input type="text" id="person" placeholder="Contoh: Budi / Pembelian Kertas" required class="w-full text-sm p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Nominal (Rp)</label>
+                    <input type="number" id="amount" min="1" placeholder="0" required class="w-full text-sm p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Keterangan / Catatan</label>
+                    <input type="text" id="note" placeholder="Contoh: Kas Minggu ke-1" required class="w-full text-sm p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition shadow">
+                        <i class="fas fa-save mr-1"></i> Simpan Transaksi
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabel Riwayat Transaksi -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <h2 class="font-bold text-gray-800">Riwayat Transaksi</h2>
+                <input type="text" id="searchInput" oninput="renderData()" placeholder="Cari nama atau catatan..." class="text-xs p-2 border rounded-lg w-full md:w-64 focus:ring-2 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs md:text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 uppercase text-[10px] font-semibold border-b">
+                            <th class="p-3">Tanggal</th>
+                            <th class="p-3">Nama</th>
+                            <th class="p-3">Keterangan</th>
+                            <th class="p-3">Nominal</th>
+                            <th class="p-3 text-center adminOnly hidden">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTable" class="divide-y divide-gray-100">
+                        <!-- Data dimasukkan via Javascript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Login Admin -->
+    <div id="loginModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <h3 class="font-bold text-gray-800 text-base">Masuk Mode Admin</h3>
+            <p class="text-xs text-gray-500">Masukkan PIN Admin untuk menambah atau menghapus data kas.</p>
+            <input type="password" id="adminPinInput" placeholder="Masukkan PIN (Default: 1234)" class="w-full border p-2.5 text-sm rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeModal()" class="px-4 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg">Batal</button>
+                <button onclick="verifyPin()" class="px-4 py-2 text-xs bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg font-medium">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Gunakan localStorage browser
+        let transactions = JSON.parse(localStorage.getItem('kas_transactions')) || [];
+        let isAdmin = false;
+        const ADMIN_PIN = "1234"; // PIN default untuk masuk sebagai Admin
+
+        function toggleAdminMode() {
+            if (isAdmin) {
+                isAdmin = false;
+                updateUIRole();
+            } else {
+                document.getElementById('loginModal').classList.remove('hidden');
+                document.getElementById('loginModal').classList.add('flex');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('flex');
+            document.getElementById('adminPinInput').value = '';
+        }
+
+        function verifyPin() {
+            const inputPin = document.getElementById('adminPinInput').value;
+            if (inputPin === ADMIN_PIN) {
+                isAdmin = true;
+                closeModal();
+                updateUIRole();
+            } else {
+                alert("PIN Salah! Akses ditolak.");
+            }
+        }
+
+        function updateUIRole() {
+            const roleStatus = document.getElementById('roleStatus');
+            const authBtnText = document.getElementById('authBtnText');
+            const lockIcon = document.getElementById('lockIcon');
+            const readOnlyNotice = document.getElementById('readOnlyNotice');
+            const adminFormSection = document.getElementById('adminFormSection');
+            const adminElements = document.querySelectorAll('.adminOnly');
+
+            if (isAdmin) {
+                roleStatus.innerText = "Mode: Admin / Bendahara";
+                authBtnText.innerText = "Keluar Admin";
+                lockIcon.className = "fas fa-unlock-alt";
+                readOnlyNotice.classList.add('hidden');
+                adminFormSection.classList.remove('hidden');
+                adminElements.forEach(el => el.classList.remove('hidden'));
+            } else {
+                roleStatus.innerText = "Mode: Pengunjung (Hanya Lihat)";
+                authBtnText.innerText = "Masuk Admin";
+                lockIcon.className = "fas fa-lock";
+                readOnlyNotice.classList.remove('hidden');
+                adminFormSection.classList.add('hidden');
+                adminElements.forEach(el => el.classList.add('hidden'));
+            }
+            renderData();
+        }
+
+        function addTransaction(e) {
+            e.preventDefault();
+            if(!isAdmin) return;
+
+            const type = document.getElementById('type').value;
+            const person = document.getElementById('person').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const note = document.getElementById('note').value;
+
+            const newTx = {
+                id: Date.now().toString(),
+                type,
+                person,
+                amount,
+                note,
+                date: new Date().toLocaleDateString('id-ID')
+            };
+
+            transactions.unshift(newTx);
+            saveData();
+            document.getElementById('transactionForm').reset();
+            renderData();
+        }
+
+        function deleteTransaction(id) {
+            if(!isAdmin) return;
+            if(confirm("Apakah Anda yakin ingin menghapus catatan ini?")) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveData();
+                renderData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('kas_transactions', JSON.stringify(transactions));
+        }
+
+        function renderData() {
+            const table = document.getElementById('transactionTable');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+            table.innerHTML = '';
+
+            const filtered = transactions.filter(t => 
+                t.person.toLowerCase().includes(search) || 
+                t.note.toLowerCase().includes(search)
+            );
+
+            if (filtered.length === 0) {
+                table.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada transaksi.</td></tr>`;
+            } else {
+                filtered.forEach(t => {
+                    if(t.type === 'pemasukan') totalMasuk += t.amount;
+                    if(t.type === 'pengeluaran') totalKeluar += t.amount;
+
+                    const isIncome = t.type === 'pemasukan';
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 border-b border-gray-100";
+                    tr.innerHTML = `
+                        <td class="p-3 text-gray-500 text-xs">${t.date}</td>
+                        <td class="p-3 font-semibold text-gray-700">${t.person}</td>
+                        <td class="p-3 text-gray-600">${t.note}</td>
+                        <td class="p-3 font-bold ${isIncome ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${isIncome ? '+' : '-'} Rp ${t.amount.toLocaleString('id-ID')}
+                        </td>
+                        <td class="p-3 text-center adminOnly ${isAdmin ? '' : 'hidden'}">
+                            <button onclick="deleteTransaction('${t.id}')" class="text-rose-500 hover:text-rose-700 p-1">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    table.appendChild(tr);
+                });
+            }
+
+            // Hitung ringkasan total keseluruhan
+            let grandMasuk = 0;
+            let grandKeluar = 0;
+            transactions.forEach(t => {
+                if(t.type === 'pemasukan') grandMasuk += t.amount;
+                if(t.type === 'pengeluaran') grandKeluar += t.amount;
+            });
+
+            const totalSaldo = grandMasuk - grandKeluar;
+            document.getElementById('totalSaldo').innerText = `Rp ${totalSaldo.toLocaleString('id-ID')}`;
+            document.getElementById('totalPemasukan').innerText = `Rp ${grandMasuk.toLocaleString('id-ID')}`;
+            document.getElementById('totalPengeluaran').innerText = `Rp ${grandKeluar.toLocaleString('id-ID')}`;
+        }
+
+        // Tampilkan data saat pertama kali dimuat
+        renderData();
+    </script>
+</body>
+</html>
